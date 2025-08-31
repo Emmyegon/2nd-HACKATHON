@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Recipe Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;500;600&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1><i class="fas fa-utensils"></i> AI Recipe Recommender</h1>
+            <div class="user-section" id="userSection">
+                <button class="btn btn-primary" id="loginBtn">Login</button>
+                <button class="btn btn-secondary" id="registerBtn">Register</button>
+                <span class="user-info" id="userInfo" style="display: none;">
+                    Welcome, <span id="username"></span>
+                    <button class="btn btn-outline" id="logoutBtn">Logout</button>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Authentication Forms -->
+            <div class="auth-forms">
+                <!-- Login Form -->
+                <div class="auth-form" id="loginForm" style="display: none;">
+                    <h2>Login</h2>
+                    <form id="loginFormElement">
+                        <div class="form-group">
+                            <input type="text" id="loginUsername" placeholder="Username" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="loginPassword" placeholder="Password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+
+                <!-- Register Form -->
+                <div class="auth-form" id="registerForm" style="display: none;">
+                    <h2>Register</h2>
+                    <form id="registerFormElement">
+                        <div class="form-group">
+                            <input type="text" id="regUsername" placeholder="Username" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="regEmail" placeholder="Email" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="regPassword" placeholder="Password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recipe Generator Section -->
+            <div class="recipe-generator" id="recipeGenerator" style="display: none;">
+                <div class="section-header">
+                    <h2>Generate Recipes from Ingredients</h2>
+                    <p>Select your available ingredients and let AI create delicious recipes for you!</p>
+                </div>
+
+                <!-- Ingredient Selection -->
+                <div class="ingredient-section">
+                    <h3>Select Your Ingredients</h3>
+                    <div class="ingredient-grid" id="ingredientGrid">
+                        <!-- Ingredients will be populated by JavaScript -->
+                    </div>
+                    <div class="selected-ingredients">
+                        <h4>Selected Ingredients:</h4>
+                        <div class="selected-list" id="selectedIngredients"></div>
+                    </div>
+                    <button class="btn btn-primary btn-large" id="generateRecipesBtn" disabled>
+                        <i class="fas fa-magic"></i> Generate Recipes
+                    </button>
+                </div>
+
+                <!-- Recipe Results -->
+                <div class="recipe-results" id="recipeResults" style="display: none;">
+                    <h3>Your AI-Generated Recipes</h3>
+                    <div class="recipe-grid" id="recipeGrid"></div>
+                </div>
+            </div>
+
+            <!-- My Recipes Section -->
+            <div class="my-recipes" id="myRecipes" style="display: none;">
+                <div class="section-header">
+                    <h2>My Recipe Collection</h2>
+                    <div class="filter-controls">
+                        <select id="difficultyFilter">
+                            <option value="">All Difficulties</option>
+                            <option value="Easy">Easy</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Hard">Hard</option>
+                        </select>
+                        <select id="timeFilter">
+                            <option value="">All Times</option>
+                            <option value="15">15 min</option>
+                            <option value="30">30 min</option>
+                            <option value="45">45 min</option>
+                            <option value="60">1+ hour</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="recipe-grid" id="myRecipeGrid"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Recipe Modal -->
+    <div class="modal" id="recipeModal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Generating delicious recipes...</p>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

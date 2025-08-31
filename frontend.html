@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Recommender - Frontend</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            transition: background 0.8s ease-in-out;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .auth-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .recipe-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .ingredient-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .ingredient-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .ingredient-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .ingredient-item.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .recipe-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .recipe-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .recipe-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .recipe-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #51cf66;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .backend-url {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .backend-url input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-utensils"></i> Recipe Recommender</h1>
+            <p>AI-Powered Recipe Generation with Secure Backend</p>
+        </div>
+
+        <!-- Backend URL Configuration -->
+        <div class="backend-url">
+            <label for="backendUrl">Backend Server URL:</label>
+            <input type="text" id="backendUrl" placeholder="http://localhost:5000" value="http://localhost:5000">
+            <button class="btn" onclick="testBackend()">Test Connection</button>
+        </div>
+
+        <!-- Authentication Section -->
+        <div class="auth-section" id="authSection">
+            <h2>Authentication</h2>
+            <div id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" placeholder="Enter password">
+                </div>
+                <button class="btn" onclick="login()">Login</button>
+                <button class="btn" onclick="showRegister()">Register</button>
+            </div>
+
+            <div id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label for="regUsername">Username:</label>
+                    <input type="text" id="regUsername" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email:</label>
+                    <input type="email" id="regEmail" placeholder="Enter email">
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password:</label>
+                    <input type="password" id="regPassword" placeholder="Enter password">
+                </div>
+                <button class="btn" onclick="register()">Register</button>
+                <button class="btn" onclick="showLogin()">Back to Login</button>
+            </div>
+        </div>
+
+        <!-- Recipe Generation Section -->
+        <div class="recipe-section hidden" id="recipeSection">
+            <h2>Generate Recipes</h2>
+            <p>Select your ingredients and let AI create delicious recipes!</p>
+
+            <div class="ingredient-grid" id="ingredientGrid">
+                <!-- Ingredients will be populated by JavaScript -->
+            </div>
+
+            <button class="btn" id="generateBtn" onclick="generateRecipes()" disabled>
+                <i class="fas fa-magic"></i> Generate Recipes
+            </button>
+
+            <div id="loading" class="loading hidden">
+                <i class="fas fa-spinner fa-spin"></i> Generating recipes...
+            </div>
+
+            <div id="recipesContainer"></div>
+        </div>
+
+        <!-- Messages -->
+        <div id="messageContainer"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let selectedIngredients = [];
+
+        // Common ingredients
+        const ingredients = [
+            'Chicken', 'Beef', 'Fish', 'Eggs', 'Milk', 'Cheese', 'Butter',
+            'Onions', 'Garlic', 'Tomatoes', 'Potatoes', 'Carrots', 'Broccoli',
+            'Spinach', 'Rice', 'Pasta', 'Bread', 'Flour', 'Sugar', 'Salt',
+            'Pepper', 'Olive Oil', 'Lemon', 'Mushrooms', 'Bell Peppers'
+        ];
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            populateIngredientGrid();
+            loadBackendUrl();
+        });
+
+        function getBackendUrl() {
+            return document.getElementById('backendUrl').value;
+        }
+
+        function loadBackendUrl() {
+            const saved = localStorage.getItem('backendUrl');
+            if (saved) {
+                document.getElementById('backendUrl').value = saved;
+            }
+        }
+
+        function saveBackendUrl() {
+            localStorage.setItem('backendUrl', getBackendUrl());
+        }
+
+        async function testBackend() {
+            try {
+                const response = await fetch(`${getBackendUrl()}/api/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Backend connection successful!', 'success');
+                    saveBackendUrl();
+                } else {
+                    showMessage('Backend connection failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Cannot connect to backend server', 'error');
+            }
+        }
+
+        function populateIngredientGrid() {
+            const grid = document.getElementById('ingredientGrid');
+            grid.innerHTML = '';
+
+            ingredients.forEach(ingredient => {
+                const item = document.createElement('div');
+                item.className = 'ingredient-item';
+                item.innerHTML = `
+                    <i class="fas fa-circle"></i>
+                    <div>${ingredient}</div>
+                `;
+                item.addEventListener('click', () => toggleIngredient(ingredient));
+                grid.appendChild(item);
+            });
+        }
+
+        function toggleIngredient(ingredient) {
+            const index = selectedIngredients.indexOf(ingredient);
+            if (index > -1) {
+                selectedIngredients.splice(index, 1);
+            } else {
+                selectedIngredients.push(ingredient);
+            }
+            updateIngredientSelection();
+            updateGenerateButton();
+        }
+
+        function updateIngredientSelection() {
+            const items = document.querySelectorAll('.ingredient-item');
+            items.forEach(item => {
+                const ingredientName = item.querySelector('div').textContent;
+                if (selectedIngredients.includes(ingredientName)) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        function updateGenerateButton() {
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = selectedIngredients.length === 0;
+        }
+
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+
+            if (!username || !email || !password) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${getBackendUrl()}/api/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('Registration successful! Please login.', 'success');
+                    showLogin();
+                    document.getElementById('regUsername').value = '';
+                    document.getElementById('regEmail').value = '';
+                    document.getElementById('regPassword').value = '';
+                } else {
+                    showMessage(data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Registration failed: ' + error.message, 'error');
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('Please enter username and password', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${getBackendUrl()}/api/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentUser = {
+                        id: data.user_id,
+                        username: data.username
+                    };
+                    showMessage('Login successful!', 'success');
+                    document.getElementById('authSection').classList.add('hidden');
+                    document.getElementById('recipeSection').classList.remove('hidden');
+                    document.getElementById('username').value = '';
+                    document.getElementById('password').value = '';
+                } else {
+                    showMessage(data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Login failed: ' + error.message, 'error');
+            }
+        }
+
+        async function generateRecipes() {
+            if (selectedIngredients.length === 0) return;
+
+            const loading = document.getElementById('loading');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            loading.classList.remove('hidden');
+            generateBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${getBackendUrl()}/api/generate-recipes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ingredients: selectedIngredients,
+                        user_id: currentUser.id
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayRecipes(data.recipes);
+                    showMessage('Recipes generated successfully!', 'success');
+                } else {
+                    showMessage(data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to generate recipes: ' + error.message, 'error');
+            } finally {
+                loading.classList.add('hidden');
+                generateBtn.disabled = false;
+            }
+        }
+
+        function displayRecipes(recipes) {
+            const container = document.getElementById('recipesContainer');
+            container.innerHTML = '<h3>Your Generated Recipes:</h3>';
+
+            recipes.forEach(recipe => {
+                const card = document.createElement('div');
+                card.className = 'recipe-card';
+                card.innerHTML = `
+                    <h3>${recipe.title}</h3>
+                    <div class="recipe-meta">
+                        <span><i class="fas fa-clock"></i> ${recipe.cooking_time}</span>
+                        <span><i class="fas fa-signal"></i> ${recipe.difficulty}</span>
+                    </div>
+                    <p><strong>Ingredients:</strong> ${recipe.ingredients}</p>
+                    <p><strong>Instructions:</strong> ${recipe.instructions}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            container.appendChild(messageDiv);
+
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

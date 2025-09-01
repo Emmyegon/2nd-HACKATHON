@@ -198,10 +198,11 @@ def register():
 def login():
     try:
         data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
+        identifier = (data.get('username') or '').strip()  # can be username or email
+        password = (data.get('password') or '').strip()
         
-        user = User.query.filter_by(username=username).first()
+        # Allow login with username OR email
+        user = User.query.filter((User.username == identifier) | (User.email == identifier)).first()
         if user and check_password_hash(user.password_hash, password):
             # Resolve premium status
             membership = Membership.query.filter_by(user_id=user.id).first()

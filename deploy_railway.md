@@ -20,9 +20,9 @@
 In Railway dashboard → Variables tab, add:
 ```
 OPENAI_API_KEY=your_openai_api_key_here
-MYSQL_HOST=your_railway_mysql_host
-MYSQL_USER=your_railway_mysql_user
-MYSQL_PASSWORD=your_railway_mysql_password
+MYSQL_HOST=mysql.railway.internal
+MYSQL_USER=root
+MYSQL_PASSWORD=TET8gA9AycpFiFYd7KUJtX1chyHSdBbwag
 MYSQL_DATABASE=railway
 ```
 

@@ -110,6 +110,10 @@ def generate_mock_recipes(ingredients):
 def index():
     return render_template('index.html')
 
+@app.route('/test')
+def test():
+    return render_template('test_api.html')
+
 @app.route('/api/health')
 def health_check():
     """Health check endpoint for Railway"""

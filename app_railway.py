@@ -216,8 +216,15 @@ def generate_recipes():
 	try:
 		data = request.get_json()
 		ingredients = data.get('ingredients', [])
+		user_id = data.get('user_id')
 		if not ingredients:
 			return jsonify({"error": "Ingredients are required"}), 400
+		# Require a valid user_id to save recipes to that user
+		if not user_id:
+			return jsonify({"error": "user_id is required"}), 400
+		user = User.query.get(user_id)
+		if not user:
+			return jsonify({"error": "User not found"}), 404
 		# Try OpenAI first
 		client = get_openai_client()
 		recipes = []
@@ -236,7 +243,7 @@ def generate_recipes():
 				recipes = generate_mock_recipes(ingredients)
 		else:
 			recipes = generate_mock_recipes(ingredients)
-		# Save recipes to database (with default user_id for now)
+		# Save recipes to database (associated with the user)
 		saved_recipes = []
 		for recipe_data in recipes:
 			recipe = Recipe(
@@ -245,7 +252,7 @@ def generate_recipes():
 				instructions=recipe_data['instructions'],
 				difficulty=recipe_data.get('difficulty', 'Medium'),
 				cooking_time=recipe_data.get('cooking_time', '30 minutes'),
-				user_id=1  # Default user ID for now
+				user_id=user_id
 			)
 			db.session.add(recipe)
 			saved_recipes.append(recipe)
@@ -290,8 +297,12 @@ def parse_openai_response(content):
 
 def get_recipes():
 	try:
-		# For now, return all recipes (you can implement user filtering later)
-		recipes = Recipe.query.order_by(Recipe.created_at.desc()).limit(20).all()
+		# Return recipes, optionally filtered by user_id
+		user_id = request.args.get('user_id', type=int)
+		query = Recipe.query
+		if user_id:
+			query = query.filter_by(user_id=user_id)
+		recipes = query.order_by(Recipe.created_at.desc()).limit(20).all()
 		return jsonify({
 			"recipes": [{
 				"id": recipe.id,

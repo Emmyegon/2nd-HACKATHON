@@ -291,7 +291,7 @@ async function generateRecipes() {
 		const response = await fetch('/api/generate-recipes', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ ingredients: selectedIngredients })
+			body: JSON.stringify({ ingredients: selectedIngredients, user_id: currentUser ? currentUser.id : null })
 		});
 		const data = await response.json();
 		if (response.ok) {
@@ -324,7 +324,8 @@ function showLoading(show) {
 async function loadRecipes() {
 	if (!currentUser) return;
 	try {
-		const response = await fetch('/api/recipes');
+		const url = currentUser ? `/api/recipes?user_id=${encodeURIComponent(currentUser.id)}` : '/api/recipes';
+		const response = await fetch(url);
 		if (response.ok) {
 			const data = await response.json();
 			recipes = data.recipes;

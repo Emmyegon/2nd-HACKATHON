@@ -16,6 +16,14 @@ const loadingSpinner = document.getElementById('loadingSpinner');
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     console.log('CulinaryAI Website Initialized');
+    // Restore user session from localStorage
+    try {
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            console.log('Restored user from localStorage:', currentUser);
+        }
+    } catch (_) {}
     
     // Check if user is logged in
     checkAuthStatus();
@@ -145,6 +153,7 @@ async function login(event) {
         
         if (response.ok) {
             currentUser = data.user;
+            try { localStorage.setItem('currentUser', JSON.stringify(currentUser)); } catch (_) {}
             console.log('Current user set to:', currentUser);
             showMessage('Login successful! Welcome back!', 'success');
             closeModal('loginModal');
@@ -187,6 +196,7 @@ async function register(event) {
         
         if (response.ok) {
             currentUser = data.user;
+            try { localStorage.setItem('currentUser', JSON.stringify(currentUser)); } catch (_) {}
             console.log('Current user set to:', currentUser);
             showMessage('Registration successful! Welcome to CulinaryAI!', 'success');
             closeModal('registerModal');
@@ -210,6 +220,7 @@ async function logout() {
         if (response.ok) {
             currentUser = null;
             recipes = [];
+            try { localStorage.removeItem('currentUser'); } catch (_) {}
             showMessage('Logged out successfully!', 'success');
             updateUI();
             clearRecipes();
@@ -565,9 +576,19 @@ console.log('CulinaryAI JavaScript loaded successfully!');
 // Premium purchase
 async function goPremium() {
     if (!currentUser) {
-        showMessage('Please login first to go premium.', 'warning');
-        showLoginModal();
-        return;
+        // Try restore again
+        try {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                updateUI();
+            }
+        } catch (_) {}
+        if (!currentUser) {
+            showMessage('Please login first to go premium.', 'warning');
+            showLoginModal();
+            return;
+        }
     }
     if (premiumInProgress) return;
     premiumInProgress = true;

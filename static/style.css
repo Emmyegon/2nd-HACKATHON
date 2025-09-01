@@ -9,7 +9,12 @@ body {
     font-family: 'Poppins', sans-serif;
     line-height: 1.6;
     color: #333;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+                url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
     min-height: 100vh;
     overflow-x: hidden;
 }
@@ -84,12 +89,12 @@ body {
 .header {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     padding: 1.5rem 0;
     position: sticky;
     top: 0;
     z-index: 1000;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     animation: fadeInUp 0.8s ease-out;
 }
 
@@ -219,6 +224,35 @@ body {
 .main {
     padding: 3rem 0;
     animation: fadeInUp 1s ease-out;
+    position: relative;
+}
+
+/* Spices Background Enhancement */
+.main::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+    animation: backgroundFloat 20s ease-in-out infinite;
+}
+
+@keyframes backgroundFloat {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    33% {
+        transform: translateY(-10px) rotate(1deg);
+    }
+    66% {
+        transform: translateY(5px) rotate(-1deg);
+    }
 }
 
 .section-header {
@@ -226,12 +260,17 @@ body {
     margin-bottom: 4rem;
     color: white;
     animation: fadeInUp 1.2s ease-out;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .section-header h2 {
     font-size: 3rem;
     margin-bottom: 1.5rem;
-    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.6);
     background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -247,6 +286,7 @@ body {
     max-width: 600px;
     margin: 0 auto;
     line-height: 1.8;
+    color: #f0f0f0;
 }
 
 /* Authentication Forms */
@@ -330,9 +370,9 @@ body {
     backdrop-filter: blur(20px);
     padding: 3rem;
     border-radius: 25px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
     margin-bottom: 4rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     animation: fadeInUp 1.6s ease-out;
     position: relative;
     overflow: hidden;
@@ -359,6 +399,7 @@ body {
     text-align: center;
     font-size: 1.6rem;
     font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .ingredient-grid {
@@ -369,9 +410,9 @@ body {
 }
 
 .ingredient-item {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(102, 126, 234, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(102, 126, 234, 0.2);
     border-radius: 20px;
     padding: 20px 15px;
     text-align: center;
@@ -380,7 +421,7 @@ body {
     font-weight: 600;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .ingredient-item::before {
@@ -472,13 +513,13 @@ body {
 
 .recipe-card {
     background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(15px);
+    backdrop-filter: blur(20px);
     border-radius: 25px;
     overflow: hidden;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     position: relative;
     animation: fadeInUp 0.8s ease-out;
     font-family: 'Georgia', 'Times New Roman', serif;
@@ -544,7 +585,7 @@ body {
 
 .recipe-card-body {
     padding: 2rem 1.5rem;
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.9);
     font-family: 'Merriweather', 'Georgia', serif;
     line-height: 1.7;
 }
@@ -614,10 +655,11 @@ body {
 /* My Recipes Section */
 .my-recipes {
     background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
     padding: 2rem;
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .filter-controls {

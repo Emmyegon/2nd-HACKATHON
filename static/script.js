@@ -64,6 +64,7 @@ const loading = document.getElementById('loading');
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('App initialized');
     initializeApp();
     setupEventListeners();
 });
@@ -98,34 +99,37 @@ function setupEventListeners() {
     // Recipe generation
     generateRecipesBtn.addEventListener('click', generateRecipes);
     
-    // Filters
-    difficultyFilter.addEventListener('change', filterRecipes);
-    timeFilter.addEventListener('change', filterRecipes);
+    // Filter changes
+    if (difficultyFilter) {
+        difficultyFilter.addEventListener('change', filterRecipes);
+    }
+    if (timeFilter) {
+        timeFilter.addEventListener('change', filterRecipes);
+    }
     
-    // Modal
-    const closeBtn = document.querySelector('.close');
-    closeBtn.addEventListener('click', closeModal);
-    window.addEventListener('click', (e) => {
-        if (e.target === recipeModal) {
-            closeModal();
-        }
-    });
+    // Modal close
+    if (recipeModal) {
+        window.addEventListener('click', function(event) {
+            if (event.target === recipeModal) {
+                recipeModal.style.display = 'none';
+            }
+        });
+    }
 }
 
-// Authentication Functions
-function showForm(formType) {
-    loginForm.style.display = 'none';
-    registerForm.style.display = 'none';
-    
-    if (formType === 'login') {
+function showForm(type) {
+    if (type === 'login') {
         loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
     } else {
+        loginForm.style.display = 'none';
         registerForm.style.display = 'block';
     }
 }
 
-async function handleLogin(e) {
-    e.preventDefault();
+async function handleLogin(event) {
+    event.preventDefault();
+    console.log('Login attempt started');
     
     const username = document.getElementById('loginUsername').value;
     const password = document.getElementById('loginPassword').value;
@@ -139,29 +143,37 @@ async function handleLogin(e) {
             body: JSON.stringify({ username, password })
         });
         
-        const data = await response.json();
+        console.log('Login response status:', response.status);
         
         if (response.ok) {
-            currentUser = {
-                id: data.user_id,
-                username: data.username
-            };
+            const data = await response.json();
+            console.log('Login successful:', data);
+            
+            currentUser = data.user;
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             showLoggedInState();
+            showMessage('Login successful!', 'success');
+            
+            // Clear form
+            document.getElementById('loginFormElement').reset();
             loginForm.style.display = 'none';
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
+            
+            // Load user's recipes
             loadUserRecipes();
         } else {
-            alert(data.error);
+            const errorData = await response.json();
+            console.error('Login failed:', errorData);
+            showMessage(errorData.error || 'Login failed', 'error');
         }
     } catch (error) {
-        alert('Error during login: ' + error.message);
+        console.error('Login error:', error);
+        showMessage('Network error. Please try again.', 'error');
     }
 }
 
-async function handleRegister(e) {
-    e.preventDefault();
+async function handleRegister(event) {
+    event.preventDefault();
+    console.log('Register attempt started');
     
     const username = document.getElementById('regUsername').value;
     const email = document.getElementById('regEmail').value;
@@ -176,20 +188,25 @@ async function handleRegister(e) {
             body: JSON.stringify({ username, email, password })
         });
         
-        const data = await response.json();
+        console.log('Register response status:', response.status);
         
         if (response.ok) {
-            alert('Registration successful! Please login.');
-            registerForm.style.display = 'none';
+            const data = await response.json();
+            console.log('Registration successful:', data);
+            
+            showMessage('Registration successful! Please login.', 'success');
+            
+            // Clear form and show login
+            document.getElementById('registerFormElement').reset();
             showForm('login');
-            document.getElementById('regUsername').value = '';
-            document.getElementById('regEmail').value = '';
-            document.getElementById('regPassword').value = '';
         } else {
-            alert(data.error);
+            const errorData = await response.json();
+            console.error('Registration failed:', errorData);
+            showMessage(errorData.error || 'Registration failed', 'error');
         }
     } catch (error) {
-        alert('Error during registration: ' + error.message);
+        console.error('Registration error:', error);
+        showMessage('Network error. Please try again.', 'error');
     }
 }
 
@@ -197,32 +214,54 @@ function logout() {
     currentUser = null;
     localStorage.removeItem('currentUser');
     showLoggedOutState();
-    allRecipes = [];
-    myRecipeGrid.innerHTML = '';
+    showMessage('Logged out successfully', 'success');
 }
 
 function showLoggedInState() {
-    loginBtn.style.display = 'none';
-    registerBtn.style.display = 'none';
-    userInfo.style.display = 'inline';
-    username.textContent = currentUser.username;
-    recipeGenerator.style.display = 'block';
-    myRecipes.style.display = 'block';
+    if (userSection) {
+        userSection.innerHTML = `
+            <span class="user-info" id="userInfo">
+                Welcome, <span id="username">${currentUser.username}</span>
+                <button class="btn btn-outline" id="logoutBtn">Logout</button>
+            </span>
+        `;
+        
+        // Re-attach logout event listener
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+    }
+    
+    if (recipeGenerator) {
+        recipeGenerator.style.display = 'block';
+    }
+    if (myRecipes) {
+        myRecipes.style.display = 'block';
+    }
 }
 
 function showLoggedOutState() {
-    loginBtn.style.display = 'inline-block';
-    registerBtn.style.display = 'inline-block';
-    userInfo.style.display = 'none';
-    recipeGenerator.style.display = 'none';
-    myRecipes.style.display = 'none';
-    recipeResults.style.display = 'none';
+    if (userSection) {
+        userSection.innerHTML = `
+            <button class="btn btn-primary" id="loginBtn">Login</button>
+            <button class="btn btn-secondary" id="registerBtn">Register</button>
+        `;
+        
+        // Re-attach event listeners
+        document.getElementById('loginBtn').addEventListener('click', () => showForm('login'));
+        document.getElementById('registerBtn').addEventListener('click', () => showForm('register'));
+    }
+    
+    if (recipeGenerator) {
+        recipeGenerator.style.display = 'none';
+    }
+    if (myRecipes) {
+        myRecipes.style.display = 'none';
+    }
 }
 
-// Ingredient Functions
 function populateIngredientGrid() {
-    ingredientGrid.innerHTML = '';
+    if (!ingredientGrid) return;
     
+    ingredientGrid.innerHTML = '';
     ingredients.forEach(ingredient => {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
@@ -230,7 +269,6 @@ function populateIngredientGrid() {
             <i class="${ingredient.icon}"></i>
             <span>${ingredient.name}</span>
         `;
-        
         ingredientItem.addEventListener('click', () => toggleIngredient(ingredient.name));
         ingredientGrid.appendChild(ingredientItem);
     });
@@ -238,7 +276,6 @@ function populateIngredientGrid() {
 
 function toggleIngredient(ingredientName) {
     const index = selectedIngredients.indexOf(ingredientName);
-    
     if (index > -1) {
         selectedIngredients.splice(index, 1);
     } else {
@@ -250,8 +287,8 @@ function toggleIngredient(ingredientName) {
 }
 
 function updateIngredientSelection() {
-    // Update visual selection in grid
-    const ingredientItems = ingredientGrid.querySelectorAll('.ingredient-item');
+    // Update visual selection
+    const ingredientItems = document.querySelectorAll('.ingredient-item');
     ingredientItems.forEach(item => {
         const ingredientName = item.querySelector('span').textContent;
         if (selectedIngredients.includes(ingredientName)) {
@@ -262,16 +299,18 @@ function updateIngredientSelection() {
     });
     
     // Update selected ingredients display
-    selectedIngredientsDiv.innerHTML = '';
-    selectedIngredients.forEach(ingredient => {
-        const tag = document.createElement('div');
-        tag.className = 'selected-tag';
-        tag.innerHTML = `
-            ${ingredient}
-            <span class="remove" onclick="removeIngredient('${ingredient}')">&times;</span>
-        `;
-        selectedIngredientsDiv.appendChild(tag);
-    });
+    if (selectedIngredientsDiv) {
+        selectedIngredientsDiv.innerHTML = '';
+        selectedIngredients.forEach(ingredient => {
+            const tag = document.createElement('div');
+            tag.className = 'selected-tag';
+            tag.innerHTML = `
+                ${ingredient}
+                <span class="remove" onclick="removeIngredient('${ingredient}')">&times;</span>
+            `;
+            selectedIngredientsDiv.appendChild(tag);
+        });
+    }
 }
 
 function removeIngredient(ingredientName) {
@@ -284,14 +323,18 @@ function removeIngredient(ingredientName) {
 }
 
 function updateGenerateButton() {
-    generateRecipesBtn.disabled = selectedIngredients.length === 0;
+    if (generateRecipesBtn) {
+        generateRecipesBtn.disabled = selectedIngredients.length === 0;
+    }
 }
 
-// Recipe Generation
 async function generateRecipes() {
-    if (selectedIngredients.length === 0) return;
+    if (!currentUser || selectedIngredients.length === 0) {
+        showMessage('Please login and select ingredients', 'error');
+        return;
+    }
     
-    loading.style.display = 'flex';
+    showLoading(true);
     
     try {
         const response = await fetch('/api/generate-recipes', {
@@ -305,90 +348,110 @@ async function generateRecipes() {
             })
         });
         
-        const data = await response.json();
+        console.log('Generate recipes response status:', response.status);
         
         if (response.ok) {
+            const data = await response.json();
+            console.log('Recipes generated:', data);
+            
             displayGeneratedRecipes(data.recipes);
-            loadUserRecipes(); // Refresh the user's recipe collection
+            showMessage('Recipes generated successfully!', 'success');
+            
+            // Clear selection
+            selectedIngredients = [];
+            updateIngredientSelection();
+            updateGenerateButton();
+            
+            // Reload user recipes
+            loadUserRecipes();
         } else {
-            alert(data.error);
+            const errorData = await response.json();
+            console.error('Recipe generation failed:', errorData);
+            showMessage(errorData.error || 'Failed to generate recipes', 'error');
         }
     } catch (error) {
-        alert('Error generating recipes: ' + error.message);
+        console.error('Recipe generation error:', error);
+        showMessage('Network error. Please try again.', 'error');
     } finally {
-        loading.style.display = 'none';
+        showLoading(false);
     }
 }
 
 function displayGeneratedRecipes(recipes) {
+    if (!recipeResults || !recipeGrid) return;
+    
     recipeResults.style.display = 'block';
     recipeGrid.innerHTML = '';
     
     recipes.forEach(recipe => {
-        const recipeCard = createRecipeCard(recipe, true);
+        const recipeCard = createRecipeCard(recipe);
         recipeGrid.appendChild(recipeCard);
     });
-    
-    // Scroll to results
-    recipeResults.scrollIntoView({ behavior: 'smooth' });
 }
 
-// Recipe Management
 async function loadUserRecipes() {
+    if (!currentUser) return;
+    
     try {
         const response = await fetch(`/api/recipes?user_id=${currentUser.id}`);
-        const recipes = await response.json();
-        allRecipes = recipes;
-        displayUserRecipes(recipes);
+        console.log('Load recipes response status:', response.status);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('User recipes loaded:', data);
+            allRecipes = data.recipes;
+            displayUserRecipes(allRecipes);
+        } else {
+            console.error('Failed to load recipes');
+        }
     } catch (error) {
-        console.error('Error loading recipes:', error);
+        console.error('Load recipes error:', error);
     }
 }
 
 function displayUserRecipes(recipes) {
+    if (!myRecipeGrid) return;
+    
     myRecipeGrid.innerHTML = '';
     
     if (recipes.length === 0) {
-        myRecipeGrid.innerHTML = '<p style="text-align: center; color: #666;">No recipes yet. Generate some recipes to get started!</p>';
+        myRecipeGrid.innerHTML = '<p>No recipes yet. Generate some recipes to get started!</p>';
         return;
     }
     
     recipes.forEach(recipe => {
-        const recipeCard = createRecipeCard(recipe, false);
+        const recipeCard = createRecipeCard(recipe);
         myRecipeGrid.appendChild(recipeCard);
     });
 }
 
-function createRecipeCard(recipe, isGenerated = false) {
+function createRecipeCard(recipe) {
     const card = document.createElement('div');
     card.className = 'recipe-card';
-    
     card.innerHTML = `
         <div class="recipe-card-header">
             <h3>${recipe.title}</h3>
             <div class="recipe-meta">
-                <span><i class="fas fa-clock"></i> ${recipe.cooking_time}</span>
-                <span><i class="fas fa-signal"></i> ${recipe.difficulty}</span>
+                <span>Difficulty: ${recipe.difficulty}</span>
+                <span>Time: ${recipe.cooking_time}</span>
             </div>
         </div>
         <div class="recipe-card-body">
             <div class="recipe-ingredients">
                 <h4>Ingredients:</h4>
                 <ul>
-                    ${recipe.ingredients.split(',').map(ing => `<li>${ing.trim()}</li>`).join('')}
+                    ${Array.isArray(recipe.ingredients) ? 
+                        recipe.ingredients.map(ingredient => `<li>${ingredient}</li>`).join('') :
+                        `<li>${recipe.ingredients}</li>`
+                    }
                 </ul>
             </div>
             <div class="recipe-actions">
-                <button class="btn btn-primary btn-small" onclick="viewRecipe(${recipe.id})">
-                    <i class="fas fa-eye"></i> View Recipe
-                </button>
-                ${!isGenerated ? `<button class="btn btn-danger btn-small" onclick="deleteRecipe(${recipe.id})">
-                    <i class="fas fa-trash"></i> Delete
-                </button>` : ''}
+                <button class="btn btn-primary btn-small" onclick="viewRecipe(${recipe.id})">View Details</button>
+                <button class="btn btn-danger btn-small" onclick="deleteRecipe(${recipe.id})">Delete</button>
             </div>
         </div>
     `;
-    
     return card;
 }
 
@@ -396,27 +459,25 @@ function viewRecipe(recipeId) {
     const recipe = allRecipes.find(r => r.id === recipeId);
     if (!recipe) return;
     
-    modalBody.innerHTML = `
-        <h2>${recipe.title}</h2>
-        <div class="recipe-meta" style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 10px;">
-            <span style="margin-right: 2rem;"><i class="fas fa-clock"></i> ${recipe.cooking_time}</span>
-            <span><i class="fas fa-signal"></i> ${recipe.difficulty}</span>
-        </div>
-        <h3>Ingredients:</h3>
-        <ul>
-            ${recipe.ingredients.split(',').map(ing => `<li>${ing.trim()}</li>`).join('')}
-        </ul>
-        <h3>Instructions:</h3>
-        <ol>
-            ${recipe.instructions.split('.').filter(step => step.trim()).map(step => `<li>${step.trim()}</li>`).join('')}
-        </ol>
-    `;
-    
-    recipeModal.style.display = 'block';
-}
-
-function closeModal() {
-    recipeModal.style.display = 'none';
+    if (recipeModal && modalBody) {
+        modalBody.innerHTML = `
+            <h2>${recipe.title}</h2>
+            <div class="recipe-meta">
+                <p><strong>Difficulty:</strong> ${recipe.difficulty}</p>
+                <p><strong>Cooking Time:</strong> ${recipe.cooking_time}</p>
+            </div>
+            <h3>Ingredients:</h3>
+            <ul>
+                ${Array.isArray(recipe.ingredients) ? 
+                    recipe.ingredients.map(ingredient => `<li>${ingredient}</li>`).join('') :
+                    `<li>${recipe.ingredients}</li>`
+                }
+            </ul>
+            <h3>Instructions:</h3>
+            <p>${recipe.instructions}</p>
+        `;
+        recipeModal.style.display = 'block';
+    }
 }
 
 async function deleteRecipe(recipeId) {
@@ -428,17 +489,20 @@ async function deleteRecipe(recipeId) {
         });
         
         if (response.ok) {
-            loadUserRecipes(); // Refresh the list
+            showMessage('Recipe deleted successfully', 'success');
+            loadUserRecipes();
         } else {
-            alert('Error deleting recipe');
+            showMessage('Failed to delete recipe', 'error');
         }
     } catch (error) {
-        alert('Error deleting recipe: ' + error.message);
+        console.error('Delete recipe error:', error);
+        showMessage('Network error. Please try again.', 'error');
     }
 }
 
-// Filtering Functions
 function filterRecipes() {
+    if (!difficultyFilter || !timeFilter) return;
+    
     const difficulty = difficultyFilter.value;
     const time = timeFilter.value;
     
@@ -449,16 +513,39 @@ function filterRecipes() {
     }
     
     if (time) {
-        filteredRecipes = filteredRecipes.filter(recipe => {
-            const cookingTime = recipe.cooking_time.toLowerCase();
-            if (time === '15' && cookingTime.includes('15')) return true;
-            if (time === '30' && cookingTime.includes('30')) return true;
-            if (time === '45' && cookingTime.includes('45')) return true;
-            if (time === '60' && (cookingTime.includes('1 hour') || cookingTime.includes('60'))) return true;
-            return false;
-        });
+        filteredRecipes = filteredRecipes.filter(recipe => recipe.cooking_time === time);
     }
     
     displayUserRecipes(filteredRecipes);
+}
+
+function showLoading(show) {
+    if (loading) {
+        loading.style.display = show ? 'flex' : 'none';
+    }
+}
+
+function showMessage(message, type) {
+    // Remove existing messages
+    const existingMessages = document.querySelectorAll('.message');
+    existingMessages.forEach(msg => msg.remove());
+    
+    // Create new message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    messageDiv.textContent = message;
+    
+    // Insert at the top of the main content
+    const main = document.querySelector('.main');
+    if (main) {
+        main.insertBefore(messageDiv, main.firstChild);
+    }
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (messageDiv.parentNode) {
+            messageDiv.remove();
+        }
+    }, 5000);
 }
 

@@ -2,6 +2,7 @@
 let currentUser = null;
 let recipes = [];
 let customIngredients = [];
+let premiumInProgress = false;
 
 // DOM elements
 const navAuth = document.getElementById('navAuth');
@@ -228,6 +229,10 @@ function updateUI() {
         navAuth.style.display = 'none';
         navUser.style.display = 'flex';
         userName.textContent = currentUser.username;
+        const premiumBadge = document.getElementById('premiumBadge');
+        if (premiumBadge) {
+            premiumBadge.style.display = currentUser.is_premium ? 'inline-flex' : 'none';
+        }
     } else {
         console.log('Showing logged out state');
         navAuth.style.display = 'flex';
@@ -556,4 +561,33 @@ document.getElementById('customIngredient').addEventListener('keypress', functio
 });
 
 console.log('CulinaryAI JavaScript loaded successfully!');
+
+// Premium purchase
+async function goPremium() {
+    if (!currentUser) {
+        showMessage('Please login first to go premium.', 'warning');
+        showLoginModal();
+        return;
+    }
+    if (premiumInProgress) return;
+    premiumInProgress = true;
+    try {
+        const resp = await fetch('/api/premium/create-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: currentUser.id, plan: 'monthly' })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.checkout_url) {
+            window.location.href = data.checkout_url;
+        } else {
+            showMessage(data.error || 'Unable to start checkout.', 'error');
+        }
+    } catch (e) {
+        console.error('Premium error:', e);
+        showMessage('Network error starting checkout.', 'error');
+    } finally {
+        premiumInProgress = false;
+    }
+}
 

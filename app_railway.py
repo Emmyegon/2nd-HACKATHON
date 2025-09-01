@@ -6,7 +6,8 @@ import os
 import openai
 import json
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import text
 import logging
 
 # Configure logging
@@ -52,6 +53,23 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     recipes = db.relationship('Recipe', backref='user', lazy=True)
+
+class Membership(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    is_active = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=True)
+
+class Payment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    provider = db.Column(db.String(50), default='intasend')
+    reference = db.Column(db.String(120), unique=True, nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+    currency = db.Column(db.String(10), default='KES')
+    status = db.Column(db.String(30), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -122,7 +140,7 @@ def health_check():
     """Health check endpoint for Railway"""
     try:
         # Test database connection
-        db.session.execute('SELECT 1')
+        db.session.execute(text('SELECT 1'))
         return jsonify({"status": "healthy", "database": "connected"}), 200
     except Exception as e:
         logger.error(f"Health check failed: {e}")
@@ -167,7 +185,8 @@ def register():
             "user": {
                 "id": new_user.id,
                 "username": new_user.username,
-                "email": new_user.email
+                "email": new_user.email,
+                "is_premium": False
             }
         }), 201
     except Exception as e:
@@ -184,12 +203,16 @@ def login():
         
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password_hash, password):
+            # Resolve premium status
+            membership = Membership.query.filter_by(user_id=user.id).first()
+            is_premium = bool(membership and membership.is_active and (membership.expires_at is None or membership.expires_at > datetime.utcnow()))
             return jsonify({
                 "message": "Login successful",
                 "user": {
                     "id": user.id,
                     "username": user.username,
-                    "email": user.email
+                    "email": user.email,
+                    "is_premium": is_premium
                 }
             }), 200
         else:
@@ -317,6 +340,128 @@ def delete_recipe(recipe_id):
         logger.error(f"Delete recipe error: {e}")
         db.session.rollback()
         return jsonify({"error": "Failed to delete recipe"}), 500
+
+# Premium membership and payments (IntaSend)
+@app.route('/api/premium/create-checkout', methods=['POST'])
+def create_premium_checkout():
+    try:
+        data = request.get_json(silent=True) or {}
+        user_id = data.get('user_id')
+        plan = data.get('plan', 'monthly')
+        amount = 499  # KES
+        currency = 'KES'
+
+        if not user_id:
+            return jsonify({"error": "user_id is required"}), 400
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        public_key = os.getenv('INTASEND_PUBLIC_KEY')
+        secret_key = os.getenv('INTASEND_SECRET_KEY')
+        is_test = os.getenv('INTASEND_TEST', 'true').lower() == 'true'
+
+        # Create a local payment record and reference
+        reference = f"PREM-{user_id}-{int(datetime.utcnow().timestamp())}"
+        payment = Payment(
+            user_id=user_id,
+            reference=reference,
+            amount=amount,
+            currency=currency,
+            status='pending'
+        )
+        db.session.add(payment)
+        db.session.commit()
+
+        # If keys are missing, return a mock checkout URL for testing
+        if not public_key or not secret_key:
+            checkout_url = f"https://pay.intasend.com/mock-checkout?ref={reference}"
+            return jsonify({
+                "checkout_url": checkout_url,
+                "reference": reference,
+                "test_mode": True
+            }), 201
+
+        # Real IntaSend checkout init via REST (simplified)
+        api_base = 'https://payment.intasend.com/api/v1' if not is_test else 'https://sandbox.intasend.com/api/v1'
+
+        import httpx
+        headers = {
+            'Authorization': f'Bearer {secret_key}',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            "amount": amount,
+            "currency": currency,
+            "description": "CulinaryAI Premium (Monthly)",
+            "host": request.host_url.rstrip('/'),
+            "reference": reference,
+            "redirect_url": request.host_url.rstrip('/') + "/premium-success",
+            "callback_url": request.host_url.rstrip('/') + "/api/premium/webhook"
+        }
+        try:
+            resp = httpx.post(f"{api_base}/checkout/", headers=headers, json=payload, timeout=20.0)
+            if resp.status_code in (200, 201):
+                data = resp.json()
+                checkout_url = data.get('checkout_url') or data.get('url') or data.get('link')
+                if not checkout_url:
+                    raise RuntimeError('Checkout URL missing in response')
+                return jsonify({
+                    "checkout_url": checkout_url,
+                    "reference": reference,
+                    "test_mode": is_test
+                }), 201
+            else:
+                logger.error(f"IntaSend init failed: {resp.status_code} {resp.text}")
+                return jsonify({"error": "Failed to create checkout"}), 502
+        except Exception as e:
+            logger.error(f"IntaSend request error: {e}")
+            return jsonify({"error": "Payment provider unreachable"}), 502
+    except Exception as e:
+        logger.error(f"Create checkout error: {e}")
+        db.session.rollback()
+        return jsonify({"error": "Failed to create checkout"}), 500
+
+@app.route('/api/premium/webhook', methods=['POST'])
+def premium_webhook():
+    try:
+        payload = request.get_json(silent=True) or {}
+        reference = payload.get('reference') or payload.get('order_id') or payload.get('invoice')
+        status = payload.get('status') or payload.get('state')
+
+        # Optional signature verification
+        expected_secret = os.getenv('INTASEND_WEBHOOK_SECRET')
+        provided_sig = request.headers.get('X-IntaSend-Signature')
+        if expected_secret:
+            if not provided_sig or provided_sig != expected_secret:
+                return jsonify({"error": "Invalid signature"}), 403
+
+        if not reference:
+            return jsonify({"error": "Missing reference"}), 400
+
+        payment = Payment.query.filter_by(reference=reference).first()
+        if not payment:
+            return jsonify({"error": "Payment not found"}), 404
+
+        payment.status = status or payment.status
+        db.session.add(payment)
+
+        # Activate membership on success
+        if str(status).lower() in ('success', 'succeeded', 'paid', 'completed'):
+            membership = Membership.query.filter_by(user_id=payment.user_id).first()
+            if not membership:
+                membership = Membership(user_id=payment.user_id)
+            membership.is_active = True
+            membership.expires_at = datetime.utcnow() + timedelta(days=30)
+            db.session.add(membership)
+        db.session.commit()
+
+        return jsonify({"ok": True}), 200
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        db.session.rollback()
+        return jsonify({"error": "Webhook processing failed"}), 500
 
 # Initialize database
 def init_db():

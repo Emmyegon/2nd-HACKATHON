@@ -7,7 +7,7 @@ import openai
 import json
 import traceback
 from datetime import datetime, timedelta
-from sqlalchemy import text
+from sqlalchemy import text, or_, func
 import logging
 
 # Configure logging
@@ -201,8 +201,11 @@ def login():
         identifier = (data.get('username') or '').strip()  # can be username or email
         password = (data.get('password') or '').strip()
         
-        # Allow login with username OR email
-        user = User.query.filter((User.username == identifier) | (User.email == identifier)).first()
+        # Allow login with username OR email (case-insensitive)
+        ident_lower = identifier.lower()
+        user = User.query.filter(
+            or_(func.lower(User.username) == ident_lower, func.lower(User.email) == ident_lower)
+        ).first()
         if user and check_password_hash(user.password_hash, password):
             # Resolve premium status
             membership = Membership.query.filter_by(user_id=user.id).first()

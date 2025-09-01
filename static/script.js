@@ -103,15 +103,19 @@ async function checkAuthStatus() {
         const response = await fetch('/api/check-auth');
         if (response.ok) {
             const data = await response.json();
-            currentUser = data.user;
-            console.log('User authenticated:', currentUser);
+            if (data.user) {
+                currentUser = data.user;
+                try { localStorage.setItem('currentUser', JSON.stringify(currentUser)); } catch (_) {}
+                console.log('Server session user:', currentUser);
+            } else {
+                // Do not clear an existing client session; keep localStorage user
+                console.log('No server session; keeping client session user:', currentUser);
+            }
         } else {
-            currentUser = null;
-            console.log('No authenticated user');
+            console.log('Auth check not OK; keeping client session user:', currentUser);
         }
     } catch (error) {
-        console.error('Auth check error:', error);
-        currentUser = null;
+        console.error('Auth check error; keeping client session user:', error);
     }
 }
 

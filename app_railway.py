@@ -348,6 +348,7 @@ def create_premium_checkout():
         data = request.get_json(silent=True) or {}
         user_id = data.get('user_id')
         plan = data.get('plan', 'monthly')
+        phone_number = data.get('phone_number')  # MSISDN e.g. 2547XXXXXXXX
         amount = 499  # KES
         currency = 'KES'
 
@@ -358,8 +359,7 @@ def create_premium_checkout():
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        public_key = os.getenv('INTASEND_PUBLIC_KEY')
-        secret_key = os.getenv('INTASEND_SECRET_KEY')
+        public_key = os.getenv('INTASEND_PUBLISHABLE_KEY') or os.getenv('INTASEND_PUBLIC_KEY')
         is_test = os.getenv('INTASEND_TEST', 'true').lower() == 'true'
 
         # Create a local payment record and reference
@@ -374,8 +374,8 @@ def create_premium_checkout():
         db.session.add(payment)
         db.session.commit()
 
-        # If keys are missing, return a mock checkout URL for testing
-        if not public_key or not secret_key:
+        # If key is missing, return a mock checkout URL for testing
+        if not public_key:
             checkout_url = f"https://pay.intasend.com/mock-checkout?ref={reference}"
             return jsonify({
                 "checkout_url": checkout_url,
@@ -383,40 +383,30 @@ def create_premium_checkout():
                 "test_mode": True
             }), 201
 
-        # Real IntaSend checkout init via REST (simplified)
-        api_base = 'https://payment.intasend.com/api/v1' if not is_test else 'https://sandbox.intasend.com/api/v1'
-
-        import httpx
-        headers = {
-            'Authorization': f'Bearer {secret_key}',
-            'Content-Type': 'application/json'
-        }
-        payload = {
-            "amount": amount,
-            "currency": currency,
-            "description": "CulinaryAI Premium (Monthly)",
-            "host": request.host_url.rstrip('/'),
-            "reference": reference,
-            "redirect_url": request.host_url.rstrip('/') + "/premium-success",
-            "callback_url": request.host_url.rstrip('/') + "/api/premium/webhook"
-        }
+        # Use IntaSend SDK to create checkout
         try:
-            resp = httpx.post(f"{api_base}/checkout/", headers=headers, json=payload, timeout=20.0)
-            if resp.status_code in (200, 201):
-                data = resp.json()
-                checkout_url = data.get('checkout_url') or data.get('url') or data.get('link')
-                if not checkout_url:
-                    raise RuntimeError('Checkout URL missing in response')
-                return jsonify({
-                    "checkout_url": checkout_url,
-                    "reference": reference,
-                    "test_mode": is_test
-                }), 201
-            else:
-                logger.error(f"IntaSend init failed: {resp.status_code} {resp.text}")
+            from intasend import APIService
+            service = APIService(token=None, publishable_key=public_key, test=is_test)
+            # Use provided phone or fallback placeholder in sandbox
+            msisdn = phone_number or "254700000000"
+            resp = service.collect.checkout(
+                phone_number=msisdn,
+                email=user.email,
+                amount=amount,
+                currency=currency,
+                comment="CulinaryAI Premium (Monthly)",
+                redirect_url=request.host_url.rstrip('/') + "/premium-success"
+            )
+            checkout_url = resp.get("url")
+            if not checkout_url:
                 return jsonify({"error": "Failed to create checkout"}), 502
+            return jsonify({
+                "checkout_url": checkout_url,
+                "reference": reference,
+                "test_mode": is_test
+            }), 201
         except Exception as e:
-            logger.error(f"IntaSend request error: {e}")
+            logger.error(f"IntaSend SDK error: {e}")
             return jsonify({"error": "Payment provider unreachable"}), 502
     except Exception as e:
         logger.error(f"Create checkout error: {e}")

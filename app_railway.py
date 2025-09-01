@@ -197,16 +197,26 @@ def register():
 @app.route('/api/login', methods=['POST'])
 def login():
     try:
-        data = request.get_json()
-        identifier = (data.get('username') or '').strip()  # can be username or email
+        data = request.get_json(silent=True) or {}
+        identifier = (data.get('username') or data.get('email') or '').strip()  # username or email
         password = (data.get('password') or '').strip()
+        logger.info(f"Login attempt for identifier='{identifier}'")
         
         # Allow login with username OR email (case-insensitive)
         ident_lower = identifier.lower()
         user = User.query.filter(
             or_(func.lower(User.username) == ident_lower, func.lower(User.email) == ident_lower)
         ).first()
-        if user and check_password_hash(user.password_hash, password):
+        if not user:
+            logger.warning("Login failed: user not found")
+            return jsonify({"error": "Invalid credentials"}), 401
+
+        is_valid = False
+        try:
+            is_valid = check_password_hash(user.password_hash, password)
+        except Exception as e:
+            logger.error(f"Password check error: {e}")
+        if is_valid:
             # Resolve premium status
             membership = Membership.query.filter_by(user_id=user.id).first()
             is_premium = bool(membership and membership.is_active and (membership.expires_at is None or membership.expires_at > datetime.utcnow()))
@@ -220,6 +230,7 @@ def login():
                 }
             }), 200
         else:
+            logger.warning("Login failed: invalid password")
             return jsonify({"error": "Invalid credentials"}), 401
     except Exception as e:
         logger.error(f"Login error: {e}")

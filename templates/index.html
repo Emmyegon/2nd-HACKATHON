@@ -3,132 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Recipe Recommender</title>
+    <title>CulinaryAI - Smart Recipe Recommendations</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;500;600&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Lora:wght@400;500;600&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="https://img.icons8.com/color/48/000000/chef-hat.png">
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <h1><i class="fas fa-utensils"></i> AI Recipe Recommender</h1>
-            <div class="user-section" id="userSection">
-                <button class="btn btn-primary" id="loginBtn">Login</button>
-                <button class="btn btn-secondary" id="registerBtn">Register</button>
-                <span class="user-info" id="userInfo" style="display: none;">
-                    Welcome, <span id="username"></span>
-                    <button class="btn btn-outline" id="logoutBtn">Logout</button>
-                </span>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-utensils"></i>
+                <span>CulinaryAI</span>
+            </div>
+            <div class="nav-menu" id="navMenu">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#generator" class="nav-link">Recipe Generator</a>
+                <a href="#recipes" class="nav-link">My Recipes</a>
+                <a href="#about" class="nav-link">About</a>
+            </div>
+            <div class="nav-auth" id="navAuth">
+                <button class="btn-login" onclick="showLoginModal()">Login</button>
+                <button class="btn-register" onclick="showRegisterModal()">Register</button>
+            </div>
+            <div class="nav-user" id="navUser" style="display: none;">
+                <span class="user-welcome">Welcome, <span id="userName">User</span>!</span>
+                <button class="btn-logout" onclick="logout()">Logout</button>
+            </div>
+            <div class="hamburger" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
-    </header>
+    </nav>
 
-    <!-- Main Content -->
-    <main class="main">
-        <div class="container">
-            <!-- Authentication Forms -->
-            <div class="auth-forms">
-                <!-- Login Form -->
-                <div class="auth-form" id="loginForm" style="display: none;">
-                    <h2>Login</h2>
-                    <form id="loginFormElement">
-                        <div class="form-group">
-                            <input type="text" id="loginUsername" placeholder="Username" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="loginPassword" placeholder="Password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Login</button>
-                    </form>
-                </div>
-
-                <!-- Register Form -->
-                <div class="auth-form" id="registerForm" style="display: none;">
-                    <h2>Register</h2>
-                    <form id="registerFormElement">
-                        <div class="form-group">
-                            <input type="text" id="regUsername" placeholder="Username" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="email" id="regEmail" placeholder="Email" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="regPassword" placeholder="Password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Register</button>
-                    </form>
-                </div>
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Discover Amazing Recipes with AI</h1>
+            <p class="hero-subtitle">Transform your ingredients into delicious meals with our intelligent recipe recommender</p>
+            <div class="hero-buttons">
+                <button class="btn-primary" onclick="scrollToSection('generator')">
+                    <i class="fas fa-magic"></i> Start Cooking
+                </button>
+                <button class="btn-secondary" onclick="scrollToSection('about')">
+                    <i class="fas fa-info-circle"></i> Learn More
+                </button>
             </div>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-item">
+                <i class="fas fa-users"></i>
+                <span class="stat-number">1000+</span>
+                <span class="stat-label">Happy Cooks</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-utensils"></i>
+                <span class="stat-number">5000+</span>
+                <span class="stat-label">Recipes Generated</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-star"></i>
+                <span class="stat-number">4.8</span>
+                <span class="stat-label">User Rating</span>
+            </div>
+        </div>
+    </section>
 
-            <!-- Recipe Generator Section -->
-            <div class="recipe-generator" id="recipeGenerator" style="display: none;">
-                <div class="section-header">
-                    <h2>Generate Recipes from Ingredients</h2>
-                    <p>Select your available ingredients and let AI create delicious recipes for you!</p>
+    <!-- Recipe Generator Section -->
+    <section id="generator" class="recipe-generator-section">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-magic"></i> AI Recipe Generator</h2>
+                <p>Select your ingredients and let our AI create personalized recipes just for you</p>
+            </div>
+            
+            <div class="generator-container">
+                <div class="ingredient-selector">
+                    <h3><i class="fas fa-carrot"></i> Select Ingredients</h3>
+                    <div class="ingredient-grid">
+                        <div class="ingredient-category">
+                            <h4>Vegetables</h4>
+                            <div class="ingredient-items">
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="tomato">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-carrot"></i> Tomato
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="onion">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-carrot"></i> Onion
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="garlic">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-carrot"></i> Garlic
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="bell pepper">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-carrot"></i> Bell Pepper
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="spinach">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-carrot"></i> Spinach
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="mushroom">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-carrot"></i> Mushroom
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="ingredient-category">
+                            <h4>Proteins</h4>
+                            <div class="ingredient-items">
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="chicken">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-drumstick-bite"></i> Chicken
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="beef">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-drumstick-bite"></i> Beef
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="fish">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-fish"></i> Fish
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="eggs">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-egg"></i> Eggs
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="tofu">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-seedling"></i> Tofu
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="ingredient-category">
+                            <h4>Grains & Pasta</h4>
+                            <div class="ingredient-items">
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="rice">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-seedling"></i> Rice
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="pasta">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-seedling"></i> Pasta
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="bread">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-bread-slice"></i> Bread
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="quinoa">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-seedling"></i> Quinoa
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="ingredient-category">
+                            <h4>Dairy & Others</h4>
+                            <div class="ingredient-items">
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="cheese">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-cheese"></i> Cheese
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="milk">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-wine-bottle"></i> Milk
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="butter">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-cheese"></i> Butter
+                                </label>
+                                <label class="ingredient-item">
+                                    <input type="checkbox" value="olive oil">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-tint"></i> Olive Oil
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="custom-ingredients">
+                        <h4><i class="fas fa-plus"></i> Add Custom Ingredients</h4>
+                        <div class="custom-input-group">
+                            <input type="text" id="customIngredient" placeholder="Enter ingredient name...">
+                            <button onclick="addCustomIngredient()" class="btn-add">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                        <div id="customIngredientsList" class="custom-ingredients-list"></div>
+                    </div>
                 </div>
-
-                <!-- Ingredient Selection -->
-                <div class="ingredient-section">
-                    <h3>Select Your Ingredients</h3>
-                    <div class="ingredient-grid" id="ingredientGrid">
-                        <!-- Ingredients will be populated by JavaScript -->
-                    </div>
-                    <div class="selected-ingredients">
-                        <h4>Selected Ingredients:</h4>
-                        <div class="selected-list" id="selectedIngredients"></div>
-                    </div>
-                    <button class="btn btn-primary btn-large" id="generateRecipesBtn" disabled>
+                
+                <div class="generator-actions">
+                    <button id="generateBtn" class="btn-generate" onclick="generateRecipes()">
                         <i class="fas fa-magic"></i> Generate Recipes
                     </button>
-                </div>
-
-                <!-- Recipe Results -->
-                <div class="recipe-results" id="recipeResults" style="display: none;">
-                    <h3>Your AI-Generated Recipes</h3>
-                    <div class="recipe-grid" id="recipeGrid"></div>
-                </div>
-            </div>
-
-            <!-- My Recipes Section -->
-            <div class="my-recipes" id="myRecipes" style="display: none;">
-                <div class="section-header">
-                    <h2>My Recipe Collection</h2>
-                    <div class="filter-controls">
-                        <select id="difficultyFilter">
-                            <option value="">All Difficulties</option>
-                            <option value="Easy">Easy</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Hard">Hard</option>
-                        </select>
-                        <select id="timeFilter">
-                            <option value="">All Times</option>
-                            <option value="15">15 min</option>
-                            <option value="30">30 min</option>
-                            <option value="45">45 min</option>
-                            <option value="60">1+ hour</option>
-                        </select>
+                    <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Creating your recipes...</span>
                     </div>
                 </div>
-                <div class="recipe-grid" id="myRecipeGrid"></div>
             </div>
         </div>
-    </main>
+    </section>
 
-    <!-- Recipe Modal -->
-    <div class="modal" id="recipeModal">
+    <!-- Recipe Results Section -->
+    <section id="recipes" class="recipes-section">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-book-open"></i> Your Recipes</h2>
+                <p>Discover and save your favorite AI-generated recipes</p>
+            </div>
+            
+            <div class="recipe-filters">
+                <div class="filter-group">
+                    <label for="difficultyFilter">Difficulty:</label>
+                    <select id="difficultyFilter" onchange="filterRecipes()">
+                        <option value="">All</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="timeFilter">Cooking Time:</label>
+                    <select id="timeFilter" onchange="filterRecipes()">
+                        <option value="">All</option>
+                        <option value="15 minutes">Quick (15 min)</option>
+                        <option value="30 minutes">Medium (30 min)</option>
+                        <option value="45 minutes">Long (45 min)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="searchFilter">Search:</label>
+                    <input type="text" id="searchFilter" placeholder="Search recipes..." onkeyup="filterRecipes()">
+                </div>
+            </div>
+            
+            <div class="recipes-grid" id="recipesGrid">
+                <!-- Recipe cards will be dynamically added here -->
+            </div>
+            
+            <div class="no-recipes" id="noRecipes" style="display: none;">
+                <i class="fas fa-utensils"></i>
+                <h3>No recipes yet</h3>
+                <p>Generate your first recipe to get started!</p>
+                <button class="btn-primary" onclick="scrollToSection('generator')">
+                    <i class="fas fa-magic"></i> Generate Recipe
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about-section">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-info-circle"></i> About CulinaryAI</h2>
+                <p>Revolutionizing home cooking with artificial intelligence</p>
+            </div>
+            
+            <div class="about-content">
+                <div class="about-features">
+                    <div class="feature-card">
+                        <i class="fas fa-brain"></i>
+                        <h3>AI-Powered</h3>
+                        <p>Advanced machine learning algorithms create personalized recipes based on your ingredients</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-clock"></i>
+                        <h3>Time-Saving</h3>
+                        <p>No more searching through cookbooks - get instant recipe suggestions tailored to what you have</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-heart"></i>
+                        <h3>Personalized</h3>
+                        <p>Save your favorite recipes and build your own digital cookbook</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-mobile-alt"></i>
+                        <h3>Mobile-Friendly</h3>
+                        <p>Access your recipes anywhere, anytime with our responsive design</p>
+                    </div>
+                </div>
+                
+                <div class="about-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>1000+</h3>
+                            <p>Active Users</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>5000+</h3>
+                            <p>Recipes Generated</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>4.8/5</h3>
+                            <p>User Rating</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <i class="fas fa-utensils"></i>
+                        <span>CulinaryAI</span>
+                    </div>
+                    <p>Transforming home cooking with the power of artificial intelligence</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#generator">Recipe Generator</a></li>
+                        <li><a href="#recipes">My Recipes</a></li>
+                        <li><a href="#about">About</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Features</h4>
+                    <ul>
+                        <li>AI Recipe Generation</li>
+                        <li>Ingredient-Based Search</li>
+                        <li>Recipe Saving</li>
+                        <li>Mobile Responsive</li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><i class="fas fa-envelope"></i> info@culinaryai.com</li>
+                        <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
+                        <li><i class="fas fa-map-marker-alt"></i> San Francisco, CA</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 CulinaryAI. All rights reserved. | Powered by OpenAI</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
-            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-header">
+                <h3><i class="fas fa-sign-in-alt"></i> Login</h3>
+                <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm" onsubmit="login(event)">
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Login</button>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Loading Spinner -->
-    <div class="loading" id="loading" style="display: none;">
-        <div class="spinner"></div>
-        <p>Generating delicious recipes...</p>
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Register</h3>
+                <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="registerForm" onsubmit="register(event)">
+                    <div class="form-group">
+                        <label for="registerUsername">Username</label>
+                        <input type="text" id="registerUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Register</button>
+                </form>
+            </div>
+        </div>
     </div>
+
+    <!-- Recipe Modal -->
+    <div id="recipeModal" class="modal">
+        <div class="modal-content recipe-modal">
+            <div class="modal-header">
+                <h3 id="recipeModalTitle">Recipe Details</h3>
+                <span class="close" onclick="closeModal('recipeModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="recipeModalContent">
+                    <!-- Recipe content will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Container -->
+    <div id="messageContainer" class="message-container"></div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

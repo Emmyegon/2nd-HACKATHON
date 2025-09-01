@@ -1,169 +1,157 @@
 // Global variables
 let currentUser = null;
-let selectedIngredients = [];
-let allRecipes = [];
+let recipes = [];
+let customIngredients = [];
 
-// Common ingredients with icons
-const ingredients = [
-    { name: 'Chicken', icon: 'fas fa-drumstick-bite' },
-    { name: 'Beef', icon: 'fas fa-hamburger' },
-    { name: 'Fish', icon: 'fas fa-fish' },
-    { name: 'Eggs', icon: 'fas fa-egg' },
-    { name: 'Milk', icon: 'fas fa-wine-bottle' },
-    { name: 'Cheese', icon: 'fas fa-cheese' },
-    { name: 'Butter', icon: 'fas fa-butter' },
-    { name: 'Onions', icon: 'fas fa-circle' },
-    { name: 'Garlic', icon: 'fas fa-circle' },
-    { name: 'Tomatoes', icon: 'fas fa-circle' },
-    { name: 'Potatoes', icon: 'fas fa-circle' },
-    { name: 'Carrots', icon: 'fas fa-circle' },
-    { name: 'Broccoli', icon: 'fas fa-seedling' },
-    { name: 'Spinach', icon: 'fas fa-seedling' },
-    { name: 'Rice', icon: 'fas fa-seedling' },
-    { name: 'Pasta', icon: 'fas fa-utensils' },
-    { name: 'Bread', icon: 'fas fa-bread-slice' },
-    { name: 'Flour', icon: 'fas fa-wheat-awn' },
-    { name: 'Sugar', icon: 'fas fa-cookie-bite' },
-    { name: 'Salt', icon: 'fas fa-circle' },
-    { name: 'Pepper', icon: 'fas fa-circle' },
-    { name: 'Olive Oil', icon: 'fas fa-tint' },
-    { name: 'Lemon', icon: 'fas fa-lemon' },
-    { name: 'Mushrooms', icon: 'fas fa-seedling' },
-    { name: 'Bell Peppers', icon: 'fas fa-circle' },
-    { name: 'Cucumber', icon: 'fas fa-seedling' },
-    { name: 'Avocado', icon: 'fas fa-seedling' },
-    { name: 'Banana', icon: 'fas fa-banana' },
-    { name: 'Apple', icon: 'fas fa-apple-alt' },
-    { name: 'Strawberries', icon: 'fas fa-seedling' }
-];
+// DOM elements
+const navAuth = document.getElementById('navAuth');
+const navUser = document.getElementById('navUser');
+const userName = document.getElementById('userName');
+const recipesGrid = document.getElementById('recipesGrid');
+const noRecipes = document.getElementById('noRecipes');
+const generateBtn = document.getElementById('generateBtn');
+const loadingSpinner = document.getElementById('loadingSpinner');
 
-// DOM Elements
-const loginBtn = document.getElementById('loginBtn');
-const registerBtn = document.getElementById('registerBtn');
-const loginForm = document.getElementById('loginForm');
-const registerForm = document.getElementById('registerForm');
-const loginFormElement = document.getElementById('loginFormElement');
-const registerFormElement = document.getElementById('registerFormElement');
-const userSection = document.getElementById('userSection');
-const userInfo = document.getElementById('userInfo');
-const username = document.getElementById('username');
-const logoutBtn = document.getElementById('logoutBtn');
-const recipeGenerator = document.getElementById('recipeGenerator');
-const myRecipes = document.getElementById('myRecipes');
-const ingredientGrid = document.getElementById('ingredientGrid');
-const selectedIngredientsDiv = document.getElementById('selectedIngredients');
-const generateRecipesBtn = document.getElementById('generateRecipesBtn');
-const recipeResults = document.getElementById('recipeResults');
-const recipeGrid = document.getElementById('recipeGrid');
-const myRecipeGrid = document.getElementById('myRecipeGrid');
-const difficultyFilter = document.getElementById('difficultyFilter');
-const timeFilter = document.getElementById('timeFilter');
-const recipeModal = document.getElementById('recipeModal');
-const modalBody = document.getElementById('modalBody');
-const loading = document.getElementById('loading');
-
-// Event Listeners
+// Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('App initialized');
-    initializeApp();
-    setupEventListeners();
-});
-
-function initializeApp() {
-    // Check if user is logged in (from localStorage)
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        showLoggedInState();
-    }
+    console.log('CulinaryAI Website Initialized');
     
-    // Populate ingredient grid
-    populateIngredientGrid();
+    // Check if user is logged in
+    checkAuthStatus();
     
     // Load recipes if user is logged in
     if (currentUser) {
-        loadUserRecipes();
+        loadRecipes();
     }
+    
+    // Initialize navigation
+    initNavigation();
+    
+    // Initialize ingredient selection
+    initIngredientSelection();
+    
+    // Show appropriate content based on auth status
+    updateUI();
+});
+
+// Navigation functions
+function initNavigation() {
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+    
+    // Active navigation highlighting
+    window.addEventListener('scroll', () => {
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            const sectionHeight = section.clientHeight;
+            if (scrollY >= (sectionTop - 200)) {
+                current = section.getAttribute('id');
+            }
+        });
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${current}`) {
+                link.classList.add('active');
+            }
+        });
+    });
 }
 
-function setupEventListeners() {
-    // Authentication buttons
-    loginBtn.addEventListener('click', () => showForm('login'));
-    registerBtn.addEventListener('click', () => showForm('register'));
-    logoutBtn.addEventListener('click', logout);
-    
-    // Form submissions
-    loginFormElement.addEventListener('submit', handleLogin);
-    registerFormElement.addEventListener('submit', handleRegister);
-    
-    // Recipe generation
-    generateRecipesBtn.addEventListener('click', generateRecipes);
-    
-    // Filter changes
-    if (difficultyFilter) {
-        difficultyFilter.addEventListener('change', filterRecipes);
-    }
-    if (timeFilter) {
-        timeFilter.addEventListener('change', filterRecipes);
-    }
-    
-    // Modal close
-    if (recipeModal) {
-        window.addEventListener('click', function(event) {
-            if (event.target === recipeModal) {
-                recipeModal.style.display = 'none';
-            }
+function toggleMenu() {
+    const navMenu = document.getElementById('navMenu');
+    navMenu.classList.toggle('active');
+}
+
+function scrollToSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
         });
     }
 }
 
-function showForm(type) {
-    if (type === 'login') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-    } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
+// Authentication functions
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/check-auth');
+        if (response.ok) {
+            const data = await response.json();
+            currentUser = data.user;
+            console.log('User authenticated:', currentUser);
+        } else {
+            currentUser = null;
+            console.log('No authenticated user');
+        }
+    } catch (error) {
+        console.error('Auth check error:', error);
+        currentUser = null;
     }
 }
 
-async function handleLogin(event) {
+function showLoginModal() {
+    document.getElementById('loginModal').style.display = 'block';
+}
+
+function showRegisterModal() {
+    document.getElementById('registerModal').style.display = 'block';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+async function login(event) {
     event.preventDefault();
-    console.log('Login attempt started');
+    console.log('Login attempt...');
     
     const username = document.getElementById('loginUsername').value;
     const password = document.getElementById('loginPassword').value;
+    
+    console.log('Login credentials:', { username, password: '***' });
     
     try {
         const response = await fetch('/api/login', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ username, password })
         });
         
         console.log('Login response status:', response.status);
+        console.log('Login response headers:', response.headers);
+        
+        const data = await response.json();
+        console.log('Login response data:', data);
         
         if (response.ok) {
-            const data = await response.json();
-            console.log('Login successful:', data);
-            
             currentUser = data.user;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            showLoggedInState();
-            showMessage('Login successful!', 'success');
-            
-            // Clear form
-            document.getElementById('loginFormElement').reset();
-            loginForm.style.display = 'none';
-            
-            // Load user's recipes
-            loadUserRecipes();
+            console.log('Current user set to:', currentUser);
+            showMessage('Login successful! Welcome back!', 'success');
+            closeModal('loginModal');
+            updateUI();
+            loadRecipes();
         } else {
-            const errorData = await response.json();
-            console.error('Login failed:', errorData);
-            showMessage(errorData.error || 'Login failed', 'error');
+            console.error('Login failed with status:', response.status);
+            showMessage(data.error || data.message || 'Login failed. Please try again.', 'error');
         }
     } catch (error) {
         console.error('Login error:', error);
@@ -171,166 +159,155 @@ async function handleLogin(event) {
     }
 }
 
-async function handleRegister(event) {
+async function register(event) {
     event.preventDefault();
-    console.log('Register attempt started');
+    console.log('Register attempt...');
     
-    const username = document.getElementById('regUsername').value;
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
+    const username = document.getElementById('registerUsername').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    
+    console.log('Register credentials:', { username, email, password: '***' });
     
     try {
         const response = await fetch('/api/register', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ username, email, password })
         });
         
         console.log('Register response status:', response.status);
+        console.log('Register response headers:', response.headers);
+        
+        const data = await response.json();
+        console.log('Register response data:', data);
         
         if (response.ok) {
-            const data = await response.json();
-            console.log('Registration successful:', data);
-            
-            showMessage('Registration successful! Please login.', 'success');
-            
-            // Clear form and show login
-            document.getElementById('registerFormElement').reset();
-            showForm('login');
+            currentUser = data.user;
+            console.log('Current user set to:', currentUser);
+            showMessage('Registration successful! Welcome to CulinaryAI!', 'success');
+            closeModal('registerModal');
+            updateUI();
         } else {
-            const errorData = await response.json();
-            console.error('Registration failed:', errorData);
-            showMessage(errorData.error || 'Registration failed', 'error');
+            console.error('Registration failed with status:', response.status);
+            showMessage(data.error || data.message || 'Registration failed. Please try again.', 'error');
         }
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('Register error:', error);
         showMessage('Network error. Please try again.', 'error');
     }
 }
 
-function logout() {
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    showLoggedOutState();
-    showMessage('Logged out successfully', 'success');
-}
-
-function showLoggedInState() {
-    if (userSection) {
-        userSection.innerHTML = `
-            <span class="user-info" id="userInfo">
-                Welcome, <span id="username">${currentUser.username}</span>
-                <button class="btn btn-outline" id="logoutBtn">Logout</button>
-            </span>
-        `;
-        
-        // Re-attach logout event listener
-        document.getElementById('logoutBtn').addEventListener('click', logout);
-    }
-    
-    if (recipeGenerator) {
-        recipeGenerator.style.display = 'block';
-    }
-    if (myRecipes) {
-        myRecipes.style.display = 'block';
-    }
-}
-
-function showLoggedOutState() {
-    if (userSection) {
-        userSection.innerHTML = `
-            <button class="btn btn-primary" id="loginBtn">Login</button>
-            <button class="btn btn-secondary" id="registerBtn">Register</button>
-        `;
-        
-        // Re-attach event listeners
-        document.getElementById('loginBtn').addEventListener('click', () => showForm('login'));
-        document.getElementById('registerBtn').addEventListener('click', () => showForm('register'));
-    }
-    
-    if (recipeGenerator) {
-        recipeGenerator.style.display = 'none';
-    }
-    if (myRecipes) {
-        myRecipes.style.display = 'none';
-    }
-}
-
-function populateIngredientGrid() {
-    if (!ingredientGrid) return;
-    
-    ingredientGrid.innerHTML = '';
-    ingredients.forEach(ingredient => {
-        const ingredientItem = document.createElement('div');
-        ingredientItem.className = 'ingredient-item';
-        ingredientItem.innerHTML = `
-            <i class="${ingredient.icon}"></i>
-            <span>${ingredient.name}</span>
-        `;
-        ingredientItem.addEventListener('click', () => toggleIngredient(ingredient.name));
-        ingredientGrid.appendChild(ingredientItem);
-    });
-}
-
-function toggleIngredient(ingredientName) {
-    const index = selectedIngredients.indexOf(ingredientName);
-    if (index > -1) {
-        selectedIngredients.splice(index, 1);
-    } else {
-        selectedIngredients.push(ingredientName);
-    }
-    
-    updateIngredientSelection();
-    updateGenerateButton();
-}
-
-function updateIngredientSelection() {
-    // Update visual selection
-    const ingredientItems = document.querySelectorAll('.ingredient-item');
-    ingredientItems.forEach(item => {
-        const ingredientName = item.querySelector('span').textContent;
-        if (selectedIngredients.includes(ingredientName)) {
-            item.classList.add('selected');
-        } else {
-            item.classList.remove('selected');
-        }
-    });
-    
-    // Update selected ingredients display
-    if (selectedIngredientsDiv) {
-        selectedIngredientsDiv.innerHTML = '';
-        selectedIngredients.forEach(ingredient => {
-            const tag = document.createElement('div');
-            tag.className = 'selected-tag';
-            tag.innerHTML = `
-                ${ingredient}
-                <span class="remove" onclick="removeIngredient('${ingredient}')">&times;</span>
-            `;
-            selectedIngredientsDiv.appendChild(tag);
+async function logout() {
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST'
         });
+        
+        if (response.ok) {
+            currentUser = null;
+            recipes = [];
+            showMessage('Logged out successfully!', 'success');
+            updateUI();
+            clearRecipes();
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+        showMessage('Logout failed. Please try again.', 'error');
     }
 }
 
-function removeIngredient(ingredientName) {
-    const index = selectedIngredients.indexOf(ingredientName);
-    if (index > -1) {
-        selectedIngredients.splice(index, 1);
-        updateIngredientSelection();
+// UI update functions
+function updateUI() {
+    console.log('Updating UI with currentUser:', currentUser);
+    
+    if (currentUser) {
+        console.log('Showing logged in state');
+        navAuth.style.display = 'none';
+        navUser.style.display = 'flex';
+        userName.textContent = currentUser.username;
+    } else {
+        console.log('Showing logged out state');
+        navAuth.style.display = 'flex';
+        navUser.style.display = 'none';
+        userName.textContent = '';
+    }
+}
+
+// Ingredient selection functions
+function initIngredientSelection() {
+    // Add event listeners to all ingredient checkboxes
+    document.querySelectorAll('.ingredient-item input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateGenerateButton);
+    });
+}
+
+function addCustomIngredient() {
+    const input = document.getElementById('customIngredient');
+    const ingredient = input.value.trim();
+    
+    if (ingredient && !customIngredients.includes(ingredient)) {
+        customIngredients.push(ingredient);
+        displayCustomIngredients();
+        input.value = '';
         updateGenerateButton();
     }
 }
 
-function updateGenerateButton() {
-    if (generateRecipesBtn) {
-        generateRecipesBtn.disabled = selectedIngredients.length === 0;
-    }
+function removeCustomIngredient(ingredient) {
+    customIngredients = customIngredients.filter(item => item !== ingredient);
+    displayCustomIngredients();
+    updateGenerateButton();
 }
 
+function displayCustomIngredients() {
+    const container = document.getElementById('customIngredientsList');
+    container.innerHTML = '';
+    
+    customIngredients.forEach(ingredient => {
+        const tag = document.createElement('div');
+        tag.className = 'custom-ingredient-tag';
+        tag.innerHTML = `
+            ${ingredient}
+            <span class="remove" onclick="removeCustomIngredient('${ingredient}')">&times;</span>
+        `;
+        container.appendChild(tag);
+    });
+}
+
+function getSelectedIngredients() {
+    const selected = [];
+    
+    // Get checked ingredients
+    document.querySelectorAll('.ingredient-item input[type="checkbox"]:checked').forEach(checkbox => {
+        selected.push(checkbox.value);
+    });
+    
+    // Add custom ingredients
+    selected.push(...customIngredients);
+    
+    return selected;
+}
+
+function updateGenerateButton() {
+    const selectedIngredients = getSelectedIngredients();
+    generateBtn.disabled = selectedIngredients.length === 0;
+}
+
+// Recipe generation functions
 async function generateRecipes() {
-    if (!currentUser || selectedIngredients.length === 0) {
-        showMessage('Please login and select ingredients', 'error');
+    if (!currentUser) {
+        showMessage('Please login to generate recipes!', 'warning');
+        showLoginModal();
+        return;
+    }
+    
+    const selectedIngredients = getSelectedIngredients();
+    
+    if (selectedIngredients.length === 0) {
+        showMessage('Please select at least one ingredient!', 'warning');
         return;
     }
     
@@ -340,212 +317,243 @@ async function generateRecipes() {
         const response = await fetch('/api/generate-recipes', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                ingredients: selectedIngredients,
-                user_id: currentUser.id
+                ingredients: selectedIngredients
             })
         });
         
-        console.log('Generate recipes response status:', response.status);
+        const data = await response.json();
         
         if (response.ok) {
-            const data = await response.json();
-            console.log('Recipes generated:', data);
-            
-            displayGeneratedRecipes(data.recipes);
-            showMessage('Recipes generated successfully!', 'success');
-            
-            // Clear selection
-            selectedIngredients = [];
-            updateIngredientSelection();
-            updateGenerateButton();
-            
-            // Reload user recipes
-            loadUserRecipes();
+            recipes = data.recipes;
+            showMessage(`Generated ${recipes.length} delicious recipes!`, 'success');
+            displayRecipes();
+            scrollToSection('recipes');
         } else {
-            const errorData = await response.json();
-            console.error('Recipe generation failed:', errorData);
-            showMessage(errorData.error || 'Failed to generate recipes', 'error');
+            showMessage(data.message || 'Failed to generate recipes. Please try again.', 'error');
         }
     } catch (error) {
-        console.error('Recipe generation error:', error);
+        console.error('Generate recipes error:', error);
         showMessage('Network error. Please try again.', 'error');
     } finally {
         showLoading(false);
     }
 }
 
-function displayGeneratedRecipes(recipes) {
-    if (!recipeResults || !recipeGrid) return;
-    
-    recipeResults.style.display = 'block';
-    recipeGrid.innerHTML = '';
-    
-    recipes.forEach(recipe => {
-        const recipeCard = createRecipeCard(recipe);
-        recipeGrid.appendChild(recipeCard);
-    });
+function showLoading(show) {
+    if (show) {
+        generateBtn.style.display = 'none';
+        loadingSpinner.style.display = 'flex';
+    } else {
+        generateBtn.style.display = 'flex';
+        loadingSpinner.style.display = 'none';
+    }
 }
 
-async function loadUserRecipes() {
+// Recipe display functions
+async function loadRecipes() {
     if (!currentUser) return;
     
     try {
-        const response = await fetch(`/api/recipes?user_id=${currentUser.id}`);
-        console.log('Load recipes response status:', response.status);
-        
+        const response = await fetch('/api/recipes');
         if (response.ok) {
             const data = await response.json();
-            console.log('User recipes loaded:', data);
-            allRecipes = data.recipes;
-            displayUserRecipes(allRecipes);
-        } else {
-            console.error('Failed to load recipes');
+            recipes = data.recipes;
+            displayRecipes();
         }
     } catch (error) {
         console.error('Load recipes error:', error);
     }
 }
 
-function displayUserRecipes(recipes) {
-    if (!myRecipeGrid) return;
-    
-    myRecipeGrid.innerHTML = '';
-    
+function displayRecipes() {
     if (recipes.length === 0) {
-        myRecipeGrid.innerHTML = '<p>No recipes yet. Generate some recipes to get started!</p>';
+        recipesGrid.style.display = 'none';
+        noRecipes.style.display = 'block';
         return;
     }
     
+    recipesGrid.style.display = 'grid';
+    noRecipes.style.display = 'none';
+    
+    recipesGrid.innerHTML = '';
+    
     recipes.forEach(recipe => {
-        const recipeCard = createRecipeCard(recipe);
-        myRecipeGrid.appendChild(recipeCard);
+        const card = createRecipeCard(recipe);
+        recipesGrid.appendChild(card);
     });
 }
 
 function createRecipeCard(recipe) {
     const card = document.createElement('div');
     card.className = 'recipe-card';
+    
+    const ingredients = Array.isArray(recipe.ingredients) 
+        ? recipe.ingredients.join(', ') 
+        : recipe.ingredients;
+    
     card.innerHTML = `
         <div class="recipe-card-header">
             <h3>${recipe.title}</h3>
-            <div class="recipe-meta">
-                <span>Difficulty: ${recipe.difficulty}</span>
-                <span>Time: ${recipe.cooking_time}</span>
+            <div class="recipe-card-meta">
+                <span><i class="fas fa-clock"></i> ${recipe.cooking_time}</span>
+                <span><i class="fas fa-user"></i> ${recipe.servings} servings</span>
             </div>
         </div>
         <div class="recipe-card-body">
-            <div class="recipe-ingredients">
-                <h4>Ingredients:</h4>
-                <ul>
-                    ${Array.isArray(recipe.ingredients) ? 
-                        recipe.ingredients.map(ingredient => `<li>${ingredient}</li>`).join('') :
-                        `<li>${recipe.ingredients}</li>`
-                    }
-                </ul>
-            </div>
-            <div class="recipe-actions">
-                <button class="btn btn-primary btn-small" onclick="viewRecipe(${recipe.id})">View Details</button>
-                <button class="btn btn-danger btn-small" onclick="deleteRecipe(${recipe.id})">Delete</button>
-            </div>
+            <h4>Ingredients</h4>
+            <p>${ingredients}</p>
+            <h4>Instructions</h4>
+            <p>${recipe.instructions.substring(0, 150)}${recipe.instructions.length > 150 ? '...' : ''}</p>
+        </div>
+        <div class="recipe-card-footer">
+            <span class="recipe-difficulty ${recipe.difficulty.toLowerCase()}">${recipe.difficulty}</span>
+            <span class="recipe-time">${recipe.cooking_time}</span>
         </div>
     `;
+    
+    card.addEventListener('click', () => viewRecipe(recipe));
     return card;
 }
 
-function viewRecipe(recipeId) {
-    const recipe = allRecipes.find(r => r.id === recipeId);
-    if (!recipe) return;
+function viewRecipe(recipe) {
+    const modal = document.getElementById('recipeModal');
+    const title = document.getElementById('recipeModalTitle');
+    const content = document.getElementById('recipeModalContent');
     
-    if (recipeModal && modalBody) {
-        modalBody.innerHTML = `
-            <h2>${recipe.title}</h2>
+    const ingredients = Array.isArray(recipe.ingredients) 
+        ? recipe.ingredients.join(', ') 
+        : recipe.ingredients;
+    
+    title.textContent = recipe.title;
+    content.innerHTML = `
+        <div class="recipe-details">
             <div class="recipe-meta">
-                <p><strong>Difficulty:</strong> ${recipe.difficulty}</p>
-                <p><strong>Cooking Time:</strong> ${recipe.cooking_time}</p>
+                <span><i class="fas fa-clock"></i> ${recipe.cooking_time}</span>
+                <span><i class="fas fa-user"></i> ${recipe.servings} servings</span>
+                <span class="recipe-difficulty ${recipe.difficulty.toLowerCase()}">${recipe.difficulty}</span>
             </div>
-            <h3>Ingredients:</h3>
-            <ul>
-                ${Array.isArray(recipe.ingredients) ? 
-                    recipe.ingredients.map(ingredient => `<li>${ingredient}</li>`).join('') :
-                    `<li>${recipe.ingredients}</li>`
-                }
-            </ul>
-            <h3>Instructions:</h3>
-            <p>${recipe.instructions}</p>
-        `;
-        recipeModal.style.display = 'block';
-    }
-}
-
-async function deleteRecipe(recipeId) {
-    if (!confirm('Are you sure you want to delete this recipe?')) return;
+            
+            <div class="recipe-section">
+                <h4><i class="fas fa-carrot"></i> Ingredients</h4>
+                <p>${ingredients}</p>
+            </div>
+            
+            <div class="recipe-section">
+                <h4><i class="fas fa-list-ol"></i> Instructions</h4>
+                <p>${recipe.instructions}</p>
+            </div>
+        </div>
+    `;
     
-    try {
-        const response = await fetch(`/api/recipes/${recipeId}`, {
-            method: 'DELETE'
-        });
-        
-        if (response.ok) {
-            showMessage('Recipe deleted successfully', 'success');
-            loadUserRecipes();
-        } else {
-            showMessage('Failed to delete recipe', 'error');
-        }
-    } catch (error) {
-        console.error('Delete recipe error:', error);
-        showMessage('Network error. Please try again.', 'error');
-    }
+    modal.style.display = 'block';
 }
 
+function clearRecipes() {
+    recipes = [];
+    recipesGrid.style.display = 'none';
+    noRecipes.style.display = 'block';
+}
+
+// Filter functions
 function filterRecipes() {
-    if (!difficultyFilter || !timeFilter) return;
+    const difficultyFilter = document.getElementById('difficultyFilter').value;
+    const timeFilter = document.getElementById('timeFilter').value;
+    const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
     
-    const difficulty = difficultyFilter.value;
-    const time = timeFilter.value;
+    const filteredRecipes = recipes.filter(recipe => {
+        const matchesDifficulty = !difficultyFilter || recipe.difficulty === difficultyFilter;
+        const matchesTime = !timeFilter || recipe.cooking_time === timeFilter;
+        const matchesSearch = !searchFilter || 
+            recipe.title.toLowerCase().includes(searchFilter) ||
+            recipe.ingredients.toLowerCase().includes(searchFilter);
+        
+        return matchesDifficulty && matchesTime && matchesSearch;
+    });
     
-    let filteredRecipes = allRecipes;
-    
-    if (difficulty) {
-        filteredRecipes = filteredRecipes.filter(recipe => recipe.difficulty === difficulty);
-    }
-    
-    if (time) {
-        filteredRecipes = filteredRecipes.filter(recipe => recipe.cooking_time === time);
-    }
-    
-    displayUserRecipes(filteredRecipes);
+    displayFilteredRecipes(filteredRecipes);
 }
 
-function showLoading(show) {
-    if (loading) {
-        loading.style.display = show ? 'flex' : 'none';
+function displayFilteredRecipes(filteredRecipes) {
+    if (filteredRecipes.length === 0) {
+        recipesGrid.style.display = 'none';
+        noRecipes.style.display = 'block';
+        noRecipes.innerHTML = `
+            <i class="fas fa-search"></i>
+            <h3>No recipes found</h3>
+            <p>Try adjusting your filters or generate new recipes!</p>
+        `;
+        return;
     }
+    
+    recipesGrid.style.display = 'grid';
+    noRecipes.style.display = 'none';
+    
+    recipesGrid.innerHTML = '';
+    
+    filteredRecipes.forEach(recipe => {
+        const card = createRecipeCard(recipe);
+        recipesGrid.appendChild(card);
+    });
 }
 
-function showMessage(message, type) {
-    // Remove existing messages
-    const existingMessages = document.querySelectorAll('.message');
-    existingMessages.forEach(msg => msg.remove());
-    
-    // Create new message
+// Message display function
+function showMessage(message, type = 'info') {
+    const container = document.getElementById('messageContainer');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
-    messageDiv.textContent = message;
     
-    // Insert at the top of the main content
-    const main = document.querySelector('.main');
-    if (main) {
-        main.insertBefore(messageDiv, main.firstChild);
-    }
+    const icon = type === 'success' ? 'fas fa-check-circle' :
+                 type === 'error' ? 'fas fa-exclamation-circle' :
+                 type === 'warning' ? 'fas fa-exclamation-triangle' :
+                 'fas fa-info-circle';
+    
+    messageDiv.innerHTML = `
+        <i class="${icon}"></i>
+        <span>${message}</span>
+    `;
+    
+    container.appendChild(messageDiv);
     
     // Auto-remove after 5 seconds
     setTimeout(() => {
         if (messageDiv.parentNode) {
-            messageDiv.remove();
+            messageDiv.parentNode.removeChild(messageDiv);
         }
     }, 5000);
 }
+
+// Close modals when clicking outside
+window.addEventListener('click', function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
+
+// Close modals with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (modal.style.display === 'block') {
+                modal.style.display = 'none';
+            }
+        });
+    }
+});
+
+// Prevent form submission on Enter key in custom ingredient input
+document.getElementById('customIngredient').addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        addCustomIngredient();
+    }
+});
+
+console.log('CulinaryAI JavaScript loaded successfully!');
 

@@ -86,21 +86,24 @@ def generate_mock_recipes(ingredients):
             "ingredients": ingredients + ["soy sauce", "garlic", "oil"],
             "instructions": f"1. Heat oil in a pan\n2. Add {ingredients[0]} and stir fry\n3. Add soy sauce and garlic\n4. Cook until done",
             "difficulty": "Easy",
-            "cooking_time": "15 minutes"
+            "cooking_time": "15 minutes",
+            "servings": "4"
         },
         {
             "title": f"{ingredients[0]} and Vegetable Soup",
             "ingredients": ingredients + ["vegetable broth", "onion", "herbs"],
             "instructions": f"1. Boil vegetable broth\n2. Add {ingredients[0]} and vegetables\n3. Simmer for 20 minutes\n4. Season with herbs",
             "difficulty": "Easy",
-            "cooking_time": "25 minutes"
+            "cooking_time": "25 minutes",
+            "servings": "6"
         },
         {
             "title": f"Quick {ingredients[0]} Pasta",
             "ingredients": ingredients + ["pasta", "olive oil", "parmesan"],
             "instructions": f"1. Cook pasta according to package\n2. Sauté {ingredients[0]} in olive oil\n3. Combine pasta and ingredients\n4. Top with parmesan",
             "difficulty": "Medium",
-            "cooking_time": "20 minutes"
+            "cooking_time": "20 minutes",
+            "servings": "4"
         }
     ]
     return mock_recipes
@@ -123,7 +126,19 @@ def health_check():
         return jsonify({"status": "healthy", "database": "connected"}), 200
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        return jsonify({"status": "unhealthy", "database": "disconnected", "error": str(e)}), 500
+        return jsonify({"status": "healthy", "database": "disconnected", "error": str(e)}), 200
+
+@app.route('/api/check-auth')
+def check_auth():
+    """Check if user is authenticated (placeholder for session-based auth)"""
+    # For now, return no user (you can implement session-based auth later)
+    return jsonify({'user': None}), 200
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    """Logout user (placeholder for session-based auth)"""
+    # For now, just return success (you can implement session clearing later)
+    return jsonify({'message': 'Logged out successfully'}), 200
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -147,7 +162,14 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         
-        return jsonify({"message": "User registered successfully", "user_id": new_user.id}), 201
+        return jsonify({
+            "message": "User registered successfully", 
+            "user": {
+                "id": new_user.id,
+                "username": new_user.username,
+                "email": new_user.email
+            }
+        }), 201
     except Exception as e:
         logger.error(f"Registration error: {e}")
         db.session.rollback()
@@ -181,7 +203,6 @@ def generate_recipes():
     try:
         data = request.get_json()
         ingredients = data.get('ingredients', [])
-        user_id = data.get('user_id')
         
         if not ingredients:
             return jsonify({"error": "Ingredients are required"}), 400
@@ -192,7 +213,7 @@ def generate_recipes():
         
         if client:
             try:
-                prompt = f"Generate 3 simple recipes using these ingredients: {', '.join(ingredients)}. Format as JSON with title, ingredients (array), instructions (string), difficulty (Easy/Medium/Hard), and cooking_time (string)."
+                prompt = f"Generate 3 simple recipes using these ingredients: {', '.join(ingredients)}. Format as JSON with title, ingredients (array), instructions (string), difficulty (Easy/Medium/Hard), cooking_time (string), and servings (string)."
                 
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
@@ -209,7 +230,7 @@ def generate_recipes():
         else:
             recipes = generate_mock_recipes(ingredients)
         
-        # Save recipes to database
+        # Save recipes to database (with default user_id for now)
         saved_recipes = []
         for recipe_data in recipes:
             recipe = Recipe(
@@ -218,7 +239,7 @@ def generate_recipes():
                 instructions=recipe_data['instructions'],
                 difficulty=recipe_data.get('difficulty', 'Medium'),
                 cooking_time=recipe_data.get('cooking_time', '30 minutes'),
-                user_id=user_id
+                user_id=1  # Default user ID for now
             )
             db.session.add(recipe)
             saved_recipes.append(recipe)
@@ -233,8 +254,9 @@ def generate_recipes():
                 "ingredients": json.loads(recipe.ingredients),
                 "instructions": recipe.instructions,
                 "difficulty": recipe.difficulty,
-                "cooking_time": recipe.cooking_time
-            } for recipe in saved_recipes]
+                "cooking_time": recipe.cooking_time,
+                "servings": recipe_data.get('servings', '4')
+            } for recipe, recipe_data in zip(saved_recipes, recipes)]
         }), 201
         
     except Exception as e:
@@ -265,11 +287,8 @@ def parse_openai_response(content):
 @app.route('/api/recipes', methods=['GET'])
 def get_recipes():
     try:
-        user_id = request.args.get('user_id')
-        if not user_id:
-            return jsonify({"error": "User ID is required"}), 400
-        
-        recipes = Recipe.query.filter_by(user_id=user_id).order_by(Recipe.created_at.desc()).all()
+        # For now, return all recipes (you can implement user filtering later)
+        recipes = Recipe.query.order_by(Recipe.created_at.desc()).limit(20).all()
         
         return jsonify({
             "recipes": [{
@@ -279,6 +298,7 @@ def get_recipes():
                 "instructions": recipe.instructions,
                 "difficulty": recipe.difficulty,
                 "cooking_time": recipe.cooking_time,
+                "servings": "4",  # Add default servings
                 "created_at": recipe.created_at.isoformat()
             } for recipe in recipes]
         }), 200

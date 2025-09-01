@@ -10,5 +10,3 @@ gunicorn==21.2.0
 cryptography==45.0.6
 cffi==1.17.1
 pycparser==2.22
-
-intasend==1.2.6

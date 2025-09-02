@@ -219,12 +219,13 @@ def generate_recipes():
 		user_id = data.get('user_id')
 		if not ingredients:
 			return jsonify({"error": "Ingredients are required"}), 400
-		# Require a valid user_id to save recipes to that user
-		if not user_id:
-			return jsonify({"error": "user_id is required"}), 400
-		user = User.query.get(user_id)
-		if not user:
-			return jsonify({"error": "User not found"}), 404
+		# If user_id provided, validate; otherwise default to 1 for saving
+		if user_id:
+			user = User.query.get(user_id)
+			if not user:
+				return jsonify({"error": "User not found"}), 404
+		else:
+			user_id = 1
 		# Try OpenAI first
 		client = get_openai_client()
 		recipes = []
